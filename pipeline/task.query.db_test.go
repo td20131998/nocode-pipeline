@@ -1,10 +1,10 @@
-package core_test
+package pipeline_test
 
 import (
 	"context"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/magiconair/properties/assert"
-	"pipeline/core"
+	"pipeline/pipeline"
 	"pipeline/test"
 	"testing"
 )
@@ -20,14 +20,14 @@ func TestQueryDBTaskWithNoParam(t *testing.T) {
 	mock.ExpectQuery("^SELECT (.+) FROM users$").
 		WillReturnRows(rows)
 
-	runner := core.NewRunner(core.NewDefaultConfig(), zapLog, nil, nil, db)
+	runner := pipeline.NewRunner(pipeline.NewDefaultConfig(), zapLog, nil, nil, db)
 
-	specs := core.Spec{
+	specs := pipeline.Spec{
 		DotDagSource: `
 			users [type="querydb" query="SELECT * FROM users" params=<[]>]
 		`,
 	}
-	_, trrs, err := runner.ExecuteRun(context.TODO(), specs, core.NewVarsFrom(nil), zapLog)
+	_, trrs, err := runner.ExecuteRun(context.TODO(), specs, pipeline.NewVarsFrom(nil), zapLog)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func TestQueryDBTaskWithNoParam(t *testing.T) {
 func TestQueryDBTaskWithFixedParams(t *testing.T) {
 	zapLog := test.NewMockZapLog()
 	db, mock := test.NewMockDB()
-	runner := core.NewRunner(core.NewDefaultConfig(), zapLog, nil, nil, db)
+	runner := pipeline.NewRunner(pipeline.NewDefaultConfig(), zapLog, nil, nil, db)
 
 	query := `SELECT id, name FROM users WHERE`
 
@@ -61,12 +61,12 @@ func TestQueryDBTaskWithFixedParams(t *testing.T) {
 		WithArgs("1").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(1, "John Doe"))
 
-	specs1 := core.Spec{
+	specs1 := pipeline.Spec{
 		DotDagSource: `
 			users [type="querydb" query="SELECT id, name FROM users WHERE id = ?" params=<["1"]>]
 		`,
 	}
-	_, trrs, err := runner.ExecuteRun(context.TODO(), specs1, core.NewVarsFrom(nil), zapLog)
+	_, trrs, err := runner.ExecuteRun(context.TODO(), specs1, pipeline.NewVarsFrom(nil), zapLog)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,12 +90,12 @@ func TestQueryDBTaskWithFixedParams(t *testing.T) {
 			AddRow(1, "John Doe").
 			AddRow(2, "Duong NT"))
 
-	specs2 := core.Spec{
+	specs2 := pipeline.Spec{
 		DotDagSource: `
 			users [type="querydb" query="SELECT id, name FROM users WHERE id = ? OR id = ?" params=<["1","2"]>]
 		`,
 	}
-	_, trrs, err = runner.ExecuteRun(context.TODO(), specs2, core.NewVarsFrom(nil), zapLog)
+	_, trrs, err = runner.ExecuteRun(context.TODO(), specs2, pipeline.NewVarsFrom(nil), zapLog)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestQueryDBTaskWithFixedParams(t *testing.T) {
 func TestQueryDBTaskWithPassingParams(t *testing.T) {
 	zapLog := test.NewMockZapLog()
 	db, mock := test.NewMockDB()
-	runner := core.NewRunner(core.NewDefaultConfig(), zapLog, nil, nil, db)
+	runner := pipeline.NewRunner(pipeline.NewDefaultConfig(), zapLog, nil, nil, db)
 
 	query := `SELECT id, name FROM users WHERE`
 
@@ -129,7 +129,7 @@ func TestQueryDBTaskWithPassingParams(t *testing.T) {
 		WithArgs("1").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(1, "John Doe"))
 
-	specs := core.Spec{
+	specs := pipeline.Spec{
 		DotDagSource: `
 			users [type="querydb" query="SELECT id, name FROM users WHERE id = ?" params=<[$(user.id)]>]
 		`,
@@ -139,7 +139,7 @@ func TestQueryDBTaskWithPassingParams(t *testing.T) {
 			"id": int64(1),
 		},
 	}
-	_, trrs, err := runner.ExecuteRun(context.TODO(), specs, core.NewVarsFrom(params), zapLog)
+	_, trrs, err := runner.ExecuteRun(context.TODO(), specs, pipeline.NewVarsFrom(params), zapLog)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +163,7 @@ func TestQueryDBTaskWithPassingParams(t *testing.T) {
 			AddRow(1, "John Doe").
 			AddRow(2, "Duong NT"))
 
-	specs = core.Spec{
+	specs = pipeline.Spec{
 		DotDagSource: `
 			users [type="querydb" query="SELECT id, name FROM users WHERE id = ? OR id = ?" params=<[$(users.0.id), $(users.1.id)]>]
 		`,
@@ -178,7 +178,7 @@ func TestQueryDBTaskWithPassingParams(t *testing.T) {
 			},
 		},
 	}
-	_, trrs, err = runner.ExecuteRun(context.TODO(), specs, core.NewVarsFrom(params), zapLog)
+	_, trrs, err = runner.ExecuteRun(context.TODO(), specs, pipeline.NewVarsFrom(params), zapLog)
 	if err != nil {
 		t.Fatal(err)
 	}

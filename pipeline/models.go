@@ -1,4 +1,4 @@
-package core
+package pipeline
 
 import (
 	"database/sql/driver"

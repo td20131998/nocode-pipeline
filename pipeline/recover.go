@@ -1,4 +1,4 @@
-package core
+package pipeline
 
 import (
 	"go.uber.org/zap"
